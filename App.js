@@ -1,8 +1,9 @@
 import ReactDOM from 'react-dom'
 import { StatusBar } from 'expo-status-bar';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, Suspense, ErrorBoundary } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Canvas, useFrame } from 'react-three-fiber'
+import { Canvas, useLoader, useFrame } from 'react-three-fiber'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 function BoxDemo(props) {
   // This reference will give us direct access to the mesh
@@ -13,9 +14,10 @@ function BoxDemo(props) {
   const [active, setActive] = useState(false)
 
   // Rotate mesh every frame, this is outside of React without overhead
-  useFrame(() => {
-    mesh.current.rotation.x = mesh.current.rotation.y += 0.01
-  })
+  // useFrame(() => {
+  //   console.log(mesh);
+  //   mesh.current.rotation.x = mesh.current.rotation.y += 0.01
+  // })
 
   return (
     <mesh
@@ -31,17 +33,29 @@ function BoxDemo(props) {
   )
 }
 
+function AssetLoader() {
+  console.log('AssetLoader function has been called')
+  // console.log(useLoader(GLTFLoader, './assets/assets_3d/room.gltf'));
+  // console.log(nodes);
+  return (null)
+}
 
+function Loading() {
+  return (null);
+}
 
 export default function App() {
   return (
     ReactDOM.render(
-      <Canvas>
-        <ambientLight />
-        <pointLight position={[10, 10, 10]} />
-        <BoxDemo position={[-1.2, 0, 0]} />
-        <BoxDemo position={[1.2, 0, 0]} />
-      </Canvas>,
+       <Canvas>
+         <Suspense fallback = {<Loading />}>
+            <AssetLoader></AssetLoader>
+         </Suspense>
+         
+         <ambientLight />
+         <pointLight position={[10, 10, 10]} />
+         <BoxDemo position={[1.2, 0, 0]} />
+       </Canvas>,
       document.getElementById('root')
     )
   );
