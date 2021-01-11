@@ -2,20 +2,13 @@ import ReactDOM from 'react-dom'
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState, Suspense, ErrorBoundary, Component } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Canvas, useLoader, useRender, useFrame, render, useThree, extend } from 'react-three-fiber'
+import { Canvas, useLoader, useRender, useFrame, render, useThree, extend, bufferGeometry } from 'react-three-fiber'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import BoxDemo from './components/BoxDemo'
 import { Camera, Mesh, PointLight, Scene } from 'three';
 // import AssetLoader from './components/AssetLoader'
 extend({ OrbitControls })
-
-const OrbitControl = () => {
-	const ref = useRef()
-	const { camera } = useThree()
-	useFrame(() => ref.current.update())
-	return <orbitControls ref={ref}/>
-}
 
 
 export default class App extends React.Component {
@@ -25,10 +18,10 @@ export default class App extends React.Component {
 				<Suspense fallback={<Loading />}>
 					<AssetLoader path={require('./assets_3d/room.gltf')}></AssetLoader>
 				</Suspense>
-				{/* <OrbitControl /> */}
+				<OrbitControl />
 				<ambientLight />
 				<pointLight position={[10, 10, 10]} />
-				{/* <BoxDemo position={[1.2, 0, 0]} /> */}
+				<BoxDemo position={[1.2, 0, 0]} />
 			</Canvas>
 		);
 	}
@@ -37,6 +30,25 @@ export default class App extends React.Component {
 
 
 /* COMPONENTS */
+
+function OrbitControl(props) {const ref = useRef();
+
+	const { camera, gl, invalidate } = useThree();
+
+	// useFrame(() => ref.current.update())
+	// useEffect(() => void ref.current.addEventListener('change', invalidate), [])
+	
+	return(
+
+		/*
+			In three-fiber constructor arguments are always passed as an array via args. 
+			If args change later on, the object must naturally get re-constructed from scratch!
+			https://github.com/pmndrs/react-three-fiber/blob/master/markdown/api.md#constructor-arguments
+		*/
+
+		<orbitControls enableZoom={false} args={[	camera	,	gl.domElement	]}/>
+	);
+}
 
 class GltfObject extends React.Component {
 	constructor(props) {
@@ -63,7 +75,14 @@ class GltfMesh extends GltfObject {
 
 	render() {
 		return(
-			<primitive object={this.props.object}></primitive>
+			// <primitive object={this.props.object}/>
+			<mesh
+				
+				args={[
+					this.props.geometry,
+					this.props.material
+				]}>
+			</mesh>
 		);
 	}
 }
@@ -116,8 +135,16 @@ function parseGltfObject(object) {
 
 
 		case 'Mesh':
-			console.log('SceneMesh created')
-			return (<GltfMesh object={object} key={object.uuid}></GltfMesh>)
+			console.log(object)
+			return (
+				<GltfMesh 
+					object={object} 
+					key={object.uuid}
+					geometry={object.geometry}
+					material={object.material}
+					// PUT MESH PROPERTIES HERE https://threejs.org/docs/index.html#api/en/objects/Mesh
+				/>
+			)
 			break;
 
 		case 'Camera':
