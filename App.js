@@ -14,13 +14,13 @@ extend({ OrbitControls })
 export default class App extends React.Component {
 	render() {
 		return (
-			<Canvas /* camera={{ position: [0, 0, 300] }}*/>
+			<Canvas>
 				<Suspense fallback={<Loading />}>
-					<AssetLoader path={require('./assets_3d/room.gltf')}></AssetLoader>
+					<AssetLoader path={require('./assets_3d/oasis_test1.gltf')}></AssetLoader>
 				</Suspense>
 				<OrbitControl />
 				<ambientLight />
-				<pointLight position={[10, 10, 10]} />
+				{/* <pointLight position={[10, 10, 10]} /> */}
 				<BoxDemo position={[1.2, 0, 0]} />
 			</Canvas>
 		);
@@ -44,9 +44,12 @@ function OrbitControl(props) {const ref = useRef();
 			In three-fiber constructor arguments are always passed as an array via args. 
 			If args change later on, the object must naturally get re-constructed from scratch!
 			https://github.com/pmndrs/react-three-fiber/blob/master/markdown/api.md#constructor-arguments
+
+
+			OrbitControls properties documentation: https://threejs.org/docs/#examples/en/controls/OrbitControls 
 		*/
 
-		<orbitControls enableZoom={false} args={[	camera	,	gl.domElement	]}/>
+		<orbitControls enableZoom={true} args={[	camera	,	gl.domElement	]}/>
 	);
 }
 
@@ -59,7 +62,13 @@ class GltfObject extends React.Component {
 	}
 
 	render(){
-		return(null);
+		return(
+			/*
+				changing from null to primitive, to catch everything that isn't a mesh and not defined
+			*/
+			null
+			// <primitive object={this.props.object}/>
+		);
 	}
 		
 	
@@ -77,7 +86,10 @@ class GltfMesh extends GltfObject {
 		return(
 			// <primitive object={this.props.object}/>
 			<mesh
-				
+				position={this.props.position}
+				rotation={this.props.rotation}
+				scale={this.props.scale}
+
 				args={[
 					this.props.geometry,
 					this.props.material
@@ -130,18 +142,27 @@ function parseGltfObject(object) {
 				//
 				console.log('found point light');
 			else
-				parseObjectChildren(object.children);
+			parseGltfObjectChildren(object.children);
 			break;
 
 
 		case 'Mesh':
-			console.log(object)
+			// console.log(object)
+
+			if(object.children.length != 0) {
+				parseGltfObjectChildren(object.children)
+			};
+			
+
 			return (
 				<GltfMesh 
 					object={object} 
 					key={object.uuid}
 					geometry={object.geometry}
 					material={object.material}
+					position={object.position}
+					rotation={object.rotation}
+					scale={object.scale}
 					// PUT MESH PROPERTIES HERE https://threejs.org/docs/index.html#api/en/objects/Mesh
 				/>
 			)
@@ -160,15 +181,35 @@ function parseGltfObject(object) {
 	return (<primitive object={object} key={object.uuid}></primitive>)
 }
 
-function parseObjectChildren(children) {
-	if (Array.isArray(children)) {
+function parseGltfObjectChildren(array) {
+	if (Array.isArray(array)) {
 
-		children.map(child => {
-			console.log('parseObjectChildren func called for: ' + child.name)
+		array.map(child => {
+			console.log('parseGltfObjectChildren func called for: ' + child.name)
+			parseGltfObject(child)
+
+			if (child.children.length != 0) {
+				let nestedChildren = child.children;
+
+				console.log (child.name + ' has children:')
+				console.log(child.children);
+				
+				nestedChildren.map(nestedChild => {
+					// parseGltfObject(child)
+
+					if (nestedChild.children.length != 0) {
+						console.log (child.name + ' has a nested child that has children!: ')
+						console.log(nestedChild.children);
+						console.log('^	TODO: something about this	^')
+					}
+				})
+			}
+
+
 		})
 
 	} else {
-		throw "Object passed to parseObjectChildren() not an array.";
+		throw "Object passed to parseGltfObjectChildren() not an array.";
 	}
 
 }
