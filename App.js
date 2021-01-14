@@ -1,12 +1,16 @@
 import ReactDOM from 'react-dom'
 import { StatusBar } from 'expo-status-bar';
-import React, { useRef, useState, Suspense, ErrorBoundary, Component } from 'react';
+import React, { useRef, useState, useEffect, Suspense, ErrorBoundary, Component } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Canvas, useLoader, useRender, useFrame, render, useThree, extend, bufferGeometry } from 'react-three-fiber'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import BoxDemo from './components/BoxDemo'
-import { Camera, Mesh, PointLight, Scene } from 'three';
+import { Camera, Light, Mesh, PointLight, Scene, Vector3 } from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
+import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
+extend({ EffectComposer, RenderPass, GlitchPass })
 // import AssetLoader from './components/AssetLoader'
 extend({ OrbitControls })
 
@@ -19,8 +23,7 @@ export default class App extends React.Component {
 					<AssetLoader path={require('./assets_3d/oasis_test1.gltf')}></AssetLoader>
 				</Suspense>
 				<OrbitControl />
-				<ambientLight />
-				{/* <pointLight position={[10, 10, 10]} /> */}
+				<ambientLight intensity={.2} />
 				<BoxDemo position={[1.2, 0, 0]} />
 			</Canvas>
 		);
@@ -31,12 +34,14 @@ export default class App extends React.Component {
 
 /* COMPONENTS */
 
-function OrbitControl(props) {const ref = useRef();
-
+const OrbitControl = () => {
+	
+	const ref = useRef();
 	const { camera, gl, invalidate } = useThree();
 
-	// useFrame(() => ref.current.update())
-	// useEffect(() => void ref.current.addEventListener('change', invalidate), [])
+	camera.position.set(2, 2, 0);
+	useFrame(() => ref.current.update())
+	useEffect(() => void ref.current.addEventListener('change', invalidate), [])
 	
 	return(
 
@@ -49,7 +54,19 @@ function OrbitControl(props) {const ref = useRef();
 			OrbitControls properties documentation: https://threejs.org/docs/#examples/en/controls/OrbitControls 
 		*/
 
-		<orbitControls enableZoom={true} args={[	camera	,	gl.domElement	]}/>
+		<orbitControls 
+			ref={ref} 
+			enableZoom={true} 
+			autoRotate={true} 
+			enableDamping={true}
+			dampingFactor={.05} 
+			panSpeed={.5}
+			rotateSpeed={.25}
+			maxDistance={10.0}
+			minDistance={2}
+			args={[	camera	,	gl.domElement	]}
+			
+		/>
 	);
 }
 
@@ -67,7 +84,6 @@ class GltfObject extends React.Component {
 				changing from null to primitive, to catch everything that isn't a mesh and not defined
 			*/
 			null
-			// <primitive object={this.props.object}/>
 		);
 	}
 		
@@ -82,6 +98,10 @@ class GltfMesh extends GltfObject {
 		// bind event handler methods (what events will this component react to?)
 	}
 
+	componentDidMount() {
+		console.log('mesh found')
+	}
+
 	render() {
 		return(
 			// <primitive object={this.props.object}/>
@@ -93,7 +113,9 @@ class GltfMesh extends GltfObject {
 				args={[
 					this.props.geometry,
 					this.props.material
-				]}>
+				]
+			}>
+				<meshPhongMaterial /*color="hotpink"*//>
 			</mesh>
 		);
 	}
@@ -119,9 +141,46 @@ class GltfCamera extends React.Component {
 	}
 }
 
+class GltfLight extends React.Component {
+	constructor(props) {
+		super(props);
+	}
+
+	componentDidMount() {
+		console.log('light found')
+	}
+
+	render() {
+		return(
+			// null
+			<pointLight
+				position={this.props.position}
+				intensity={this.props.intensity}
+			/>
+		);
+	}
+}
+
 
 
 /* FUNCTIONS */
+
+function AssetLoader(props) {
+	// return an array of primitives
+
+	const gltf = useLoader(GLTFLoader, props.path);
+	const gltfObjects = gltf.scene.children;
+	var sceneObjects = [];
+	var sceneLights = [];
+
+	console.log(gltfObjects);
+
+	gltfObjects.map(object => { 
+		sceneObjects.push(parseGltfObject(object)); 
+	});
+
+	return (sceneObjects);
+}
 
 function parseGltfObject(object) {
 
@@ -136,36 +195,61 @@ function parseGltfObject(object) {
 	switch (object.type.toString()) {
 
 		case 'Object3D':
-			if (!object.children.length > 0 && object.name.substring(0, 5) == 'Empty')  // if Object has children and Object name starts with 'Empty' (case-sensitive)
-				console.log('found empty');
-			else if (object.name.substring(0, 5) == 'Point')   // if Object name starts with 'Point'
-				//
-				console.log('found point light');
-			else
-			parseGltfObjectChildren(object.children);
-			break;
+			if (object.children.length > 0) {
+				let lightTypes = ["DirectionalLight", "PointLight"]
+				let lightSource = object.children[0]
 
+				
+				// return(<primitive object={object} key={object.uuid}/>)
+				// return(null)
+				if (lightSource.type.toString() == 'PointLight') {
+					console.log('creating pointLight');
+
+					return (
+						<GltfLight
+							position={object.position}
+							intensity={lightSource.intensity/10}
+							key={object.uuid}
+						/>
+					)
+				}
+
+				// lightTypes.map(lightTypeString => {
+				// 	if (lightSource.type.toString() == lightTypeString) {
+				// 		console.log('GltfLight created: ')
+				// 		console.log(lightSource)
+						
+
+				// 		return(
+				// 			lightSource
+				// 		)
+				// 	}
+				// })
+			}
+			break;
 
 		case 'Mesh':
 			// console.log(object)
 
 			if(object.children.length != 0) {
 				parseGltfObjectChildren(object.children)
-			};
+			} else {
+				return (
+					<GltfMesh
+						object={object} 
+						key={object.uuid}
+						geometry={object.geometry}
+						material={object.material}
+						position={object.position}
+						rotation={object.rotation}
+						scale={object.scale}
+						// PUT MESH PROPERTIES HERE https://threejs.org/docs/index.html#api/en/objects/Mesh
+					/>
+				)
+			}
 			
 
-			return (
-				<GltfMesh 
-					object={object} 
-					key={object.uuid}
-					geometry={object.geometry}
-					material={object.material}
-					position={object.position}
-					rotation={object.rotation}
-					scale={object.scale}
-					// PUT MESH PROPERTIES HERE https://threejs.org/docs/index.html#api/en/objects/Mesh
-				/>
-			)
+			
 			break;
 
 		case 'Camera':
@@ -178,28 +262,28 @@ function parseGltfObject(object) {
 			break;
 	}
 
-	return (<primitive object={object} key={object.uuid}></primitive>)
+	// return (<primitive object={object} key={object.uuid}></primitive>)
 }
 
 function parseGltfObjectChildren(array) {
 	if (Array.isArray(array)) {
 
 		array.map(child => {
-			console.log('parseGltfObjectChildren func called for: ' + child.name)
+			// console.log('parseGltfObjectChildren func called for: ' + child.name)
 			parseGltfObject(child)
 
 			if (child.children.length != 0) {
 				let nestedChildren = child.children;
 
-				console.log (child.name + ' has children:')
-				console.log(child.children);
+				// console.log (child.name + ' has children:')
+				// console.log(child.children);
 				
 				nestedChildren.map(nestedChild => {
 					// parseGltfObject(child)
 
 					if (nestedChild.children.length != 0) {
 						console.log (child.name + ' has a nested child that has children!: ')
-						console.log(nestedChild.children);
+						// console.log(nestedChild.children);
 						console.log('^	TODO: something about this	^')
 					}
 				})
@@ -213,24 +297,6 @@ function parseGltfObjectChildren(array) {
 	}
 
 }
-
-function AssetLoader(props) {
-	// return an array of primitives
-
-	const gltf = useLoader(GLTFLoader, props.path);
-	const gltfObjects = gltf.scene.children;
-	var sceneObjects = [];
-
-	console.log(gltfObjects);
-
-	gltfObjects.map(object => { 
-		sceneObjects.push(parseGltfObject(object)); }
-	);
-
-	return (sceneObjects);
-}
-
-
 
 
 /* UTILITY FUNCTIONS */
