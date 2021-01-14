@@ -6,7 +6,7 @@ import { Canvas, useLoader, useRender, useFrame, render, useThree, extend, buffe
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import BoxDemo from './components/BoxDemo'
-import { Camera, Light, Mesh, PointLight, Scene, Vector3 } from 'three';
+// import { Camera, Light, Mesh, PointLight, Scene, Vector3 } from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
@@ -19,12 +19,14 @@ export default class App extends React.Component {
 	render() {
 		return (
 			<Canvas>
+				<Camera/>
 				<Suspense fallback={<Loading />}>
 					<AssetLoader path={require('./assets_3d/oasis_test1.gltf')}></AssetLoader>
 				</Suspense>
 				<OrbitControl />
 				<ambientLight intensity={.2} />
 				<BoxDemo position={[1.2, 0, 0]} />
+				<GltfCamera></GltfCamera>
 			</Canvas>
 		);
 	}
@@ -32,13 +34,36 @@ export default class App extends React.Component {
 
 
 
-/* COMPONENTS */
+/* 
+
+	COMPONENTS
+
+*/
+
+function Camera(props) {
+	const ref = useRef()
+	const { setDefaultCamera } = useThree()
+	// Make the camera known to the system
+	useEffect(() => void setDefaultCamera(ref.current), [])
+	// Update it every frame
+	useFrame(() => ref.current.updateMatrixWorld())
+	return <perspectiveCamera ref={ref} {...props} />
+  }
 
 const OrbitControl = () => {
 	
+	/*
+		TO-DO
+
+		add controls to cycle through camera positions, through gesture and/or regions of selection
+
+	*/
+
+
 	const ref = useRef();
 	const { camera, gl, invalidate } = useThree();
 
+	// CAMERA POSITION IS SET HERE
 	camera.position.set(2, 2, 0);
 	useFrame(() => ref.current.update())
 	useEffect(() => void ref.current.addEventListener('change', invalidate), [])
@@ -94,8 +119,10 @@ class GltfMesh extends GltfObject {
 	constructor(props) {
 		super(props);
 		// initialize local state here (what states should this component have??)
-
+		this.state = {hovered: false}
+		this.state = {active: false}
 		// bind event handler methods (what events will this component react to?)
+
 	}
 
 	componentDidMount() {
@@ -104,8 +131,16 @@ class GltfMesh extends GltfObject {
 
 	render() {
 		return(
-			// <primitive object={this.props.object}/>
 			<mesh
+				// event propagation docs: https://github.com/pmndrs/react-three-fiber/blob/master/markdown/api.md#event-propagation-bubbling
+
+				onPointerOver={(e) => {
+					e.stopPropagation()
+					this.setState({hovered: true})
+				}}
+				onPointerOut={(event) =>  {
+					this.setState({hovered: false})
+				}}
 				position={this.props.position}
 				rotation={this.props.rotation}
 				scale={this.props.scale}
@@ -115,26 +150,37 @@ class GltfMesh extends GltfObject {
 					this.props.material
 				]
 			}>
-				<meshPhongMaterial /*color="hotpink"*//>
+				<meshStandardMaterial color={this.state.hovered ? 'orange' : 'white' }/>
 			</mesh>
 		);
 	}
 }
 
 class GltfCamera extends React.Component {
-	// constructor (props) {
-	// 	super(props);
-	// 	this.camera;
-	// 	this.orbitControl = this.orbitControl.bind(this);
-	// }
+	constructor (props) {
+		super(props);
+		this.orbitControl = this.orbitControl.bind(this);
+	}
 
-	// orbitControl() {
-	// 	// const ref = useRef()
-	// 	// const { camera } = useThree()
-	// 	// useRender(() => ref.current.obj.update())
-	// 	// return <orbitControls ref={ref} args={[camera]} {...props} />
-	//   }
+	componentDidMount() {
+		// const ref = useRef()
+		// const { setDefaultCamera } = useThree()
+
+		// useEffect(() => void setDefaultCamera(ref.current), [])
+		// useFrame(() => ref.current.updateMatrixWorld())
+		console.log('GltfCamera mounted: ' + this.props.camera);
+		
+	}
+
+	orbitControl() {
+		// const ref = useRef()
+		// const { camera } = useThree()
+		// useRender(() => ref.current.obj.update())
+		// return <orbitControls ref={ref} args={[camera]} {...props} />
+	  }
 	
+
+	// camera.position.set(2, 2, 0);
 	
 	render() {
 		return null
@@ -261,7 +307,7 @@ function parseGltfObject(object) {
 			// console.log('type' + object.children[0] + 'not found')
 			break;
 	}
-
+	//	V	V	REPLACE THIS CODE WITH GLTFOBJECT	V	V
 	// return (<primitive object={object} key={object.uuid}></primitive>)
 }
 
