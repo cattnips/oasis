@@ -2,7 +2,7 @@ import ReactDOM from 'react-dom'
 import { StatusBar } from 'expo-status-bar';
 import React, { useRef, useState, useEffect, Suspense, ErrorBoundary, Component } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Canvas, useLoader, useRender, useFrame, render, useThree, extend, bufferGeometry } from 'react-three-fiber'
+import { Canvas, useLoader, useRender, useFrame, render, useThree, extend, bufferGeometry, useResource } from 'react-three-fiber'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import BoxDemo from './components/BoxDemo'
@@ -10,24 +10,36 @@ import BoxDemo from './components/BoxDemo'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
+
+import { Effects as DreiEffects, Text as ReactText } from '@react-three/drei'
+
+import { LoremIpsum } from "lorem-ipsum"
 extend({ EffectComposer, RenderPass, GlitchPass })
 // import AssetLoader from './components/AssetLoader'
 extend({ OrbitControls })
 
 
+
 export default class App extends React.Component {
 	render() {
 		return (
-			<Canvas>
-				<Camera/>
-				<Suspense fallback={<Loading />}>
-					<AssetLoader path={require('./assets_3d/oasis_test1.gltf')}></AssetLoader>
-				</Suspense>
-				<OrbitControl />
-				<ambientLight intensity={.2} />
-				<BoxDemo position={[1.2, 0, 0]} />
-				<GltfCamera></GltfCamera>
-			</Canvas>
+			<div style={{height: "100%"}}>
+				<AppWrapper>
+				{/* <GuiPanel/>
+				<Canvas>
+					<Camera/>
+					<Suspense fallback={<Loading />}>
+						<AssetLoader path={require('./assets_3d/oasis_test1.gltf')}></AssetLoader>
+					</Suspense>
+					<OrbitControl />
+					<ambientLight intensity={.2} />
+					<BoxDemo position={[1.2, 0, 0]} />
+					<GltfCamera></GltfCamera>
+					<Effects/>
+				</Canvas>  */}
+				</AppWrapper>
+				
+			</div>
 		);
 	}
 }
@@ -40,15 +52,173 @@ export default class App extends React.Component {
 
 */
 
-function Camera(props) {
-	const ref = useRef()
-	const { setDefaultCamera } = useThree()
-	// Make the camera known to the system
-	useEffect(() => void setDefaultCamera(ref.current), [])
-	// Update it every frame
-	useFrame(() => ref.current.updateMatrixWorld())
-	return <perspectiveCamera ref={ref} {...props} />
-  }
+class AppCanvas extends React.PureComponent {
+	constructor(props) {
+		super(props)
+	}
+
+	render() {
+		return(
+			<Canvas>
+				<Camera/>
+				<Suspense fallback={<Loading />}>
+					<AssetLoader 
+						path={require('./assets_3d/oasis_test1.gltf')}
+						inputHandler = {this.props.inputHandler}
+					></AssetLoader>
+				</Suspense>
+				<OrbitControl />
+				<ambientLight intensity={.2} />
+				<BoxDemo position={[1.2, 0, 0]} />
+				<GltfCamera></GltfCamera>
+				<Effects/>
+			</Canvas> 
+		)
+	}
+}
+
+class AppWrapper extends React.Component {
+	constructor(props){
+		super(props)
+		this.state = {
+			activeObject: null
+		}
+
+		this.handler = this.handler.bind(this)
+		
+	}
+
+	handler(mesh) {
+		console.log('handler() called for object ' + mesh.props.name)
+		console.log(mesh);
+		this.setState({
+			activeObject: mesh
+			
+		})
+	}
+
+	render() {
+		return (
+			<div style={{height: "100%"}}>
+				<GuiPanel
+					selectedObject={this.state.activeObject}
+				/>
+
+				<AppCanvas 
+					inputHandler = {this.handler}
+				/>
+			</div>
+		)
+	}
+}
+
+class GuiPanel extends React.Component {
+	constructor(props) {
+		super(props)
+	}
+
+	render() {
+		return(
+			<div style={{
+				display: 'flex',
+				flexDirection: 'column',
+				position: 'absolute',
+				zIndex: 100,
+				minWidth: '375px',	// NEEDS TO BE CHANGED FOR MOBILE, a slightly different system needs to be used for gui
+				width: '33%',
+				height: '100%',
+				backgroundColor: 'rgba(128, 128, 128, .9)',
+			}}>
+				<div style={{
+					opacity: '100%', 
+					margin: '0px 20px'
+				}}>
+					
+					{/* marginBlock: what is setting is the default to a non-zero value?? where do I go to change that at the root level?? */}
+
+					<h1 style={{
+						fontSize: '48px',
+						padding: '20px 0px',
+						marginBlock: '0px',
+						overflow: 'hidden'
+					}}>
+						{this.props.selectedObject?.props.name}
+					</h1>
+
+
+					<h2 style={{
+						color: 'dark grey', 
+						marginBlock: '0px'
+					}}>visual description</h2>
+
+
+					<p>{lorem.generateSentences(3)}</p>
+					
+				</div>
+				
+			</div>
+		)
+	}
+}
+
+const guiPanelStyle = {
+
+}
+
+const infoStyle = {
+	color: 'black',
+	position: "absolute",
+	
+	top: '10px',
+	width: '100%',
+	zIndex: 100,
+	display: 'block'
+}
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		backgroundColor: '#fff',
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+
+	info: {
+		// color: 'black',
+		// position: "absolute",
+		
+		// top: '10px',
+		// width: '100%',
+		// zIndex: 100,
+		// display: 'block'
+		// text-align: 'center',
+		// z-index: '100',
+		// display: 'block',
+	},
+});
+
+// const guiInfoStyle = {
+// 	position: absolute
+// }
+
+// const info = (
+// 	<div className={"info"} style={styles.info}>
+// 		<h2>{this.props.name}</h2>
+// 		<p>{this.props.description}</p>
+// 		<p>{this.props.notes}</p>
+// 	</div>
+// )
+
+const lorem = new LoremIpsum({
+	sentencesPerParagraph: {
+	  max: 8,
+	  min: 4
+	},
+	wordsPerSentence: {
+	  max: 16,
+	  min: 4
+	}
+});
 
 const OrbitControl = () => {
 	
@@ -65,7 +235,7 @@ const OrbitControl = () => {
 
 	// CAMERA POSITION IS SET HERE
 	camera.position.set(2, 2, 0);
-	useFrame(() => ref.current.update())
+	useFrame(() => ref.current.update(), 2)
 	useEffect(() => void ref.current.addEventListener('change', invalidate), [])
 	
 	return(
@@ -122,7 +292,7 @@ class GltfMesh extends GltfObject {
 		this.state = {hovered: false}
 		this.state = {active: false}
 		// bind event handler methods (what events will this component react to?)
-
+		// this.props
 	}
 
 	componentDidMount() {
@@ -138,8 +308,16 @@ class GltfMesh extends GltfObject {
 					e.stopPropagation()
 					this.setState({hovered: true})
 				}}
-				onPointerOut={(event) =>  {
+				onPointerOut={(e) =>  {
+					e.stopPropagation()
 					this.setState({hovered: false})
+				}}
+				onClick={(e) => {
+					// showInfo(name, description, notes)
+					console.log(this.props.name + " says: I\'ve been clicked!")
+					this.props.inputHandler(this)
+					e.stopPropagation()
+					// this.showInfo(this.props.name, this.props.description, this.props.notes)
 				}}
 				position={this.props.position}
 				rotation={this.props.rotation}
@@ -209,7 +387,50 @@ class GltfLight extends React.Component {
 
 
 
-/* FUNCTIONS */
+/* 
+
+	FUNCTIONS
+
+*/
+
+function Effects() {
+	const { gl, scene, camera, size } = useThree()
+	const composer = useRef()
+	useEffect(() => void composer.current.setSize(size.width, size.height), [size])
+	useFrame(() => composer.current.render(), 1)
+
+	return (
+		<effectComposer ref={composer} args={[gl]}>
+			<renderPass attachArray="passes" args={[scene, camera]} />
+      		<glitchPass attachArray="passes" renderToScreen />
+		</effectComposer>
+	)
+}
+
+function Camera(props) {
+	const ref = useRef()
+	const { setDefaultCamera } = useThree()
+	// Make the camera known to the system
+	useEffect(() => void setDefaultCamera(ref.current), [])
+	// Update it every frame
+	useFrame(() => ref.current.updateMatrixWorld())
+	return <perspectiveCamera ref={ref} {...props} />
+}
+
+function Information (props) {
+	useFrame(({ gl }) => void ((gl.autoClear = false), gl.render(this.information()), 5))
+
+	return(
+		<ReactText
+			// style={styles.info}
+			color={'red'}
+			fontSize={1}>
+			HELLO?!
+		</ReactText>
+	);
+	
+}
+
 
 function AssetLoader(props) {
 	// return an array of primitives
@@ -222,13 +443,13 @@ function AssetLoader(props) {
 	console.log(gltfObjects);
 
 	gltfObjects.map(object => { 
-		sceneObjects.push(parseGltfObject(object)); 
+		sceneObjects.push(parseGltfObject(object, props.inputHandler)); 
 	});
 
 	return (sceneObjects);
 }
 
-function parseGltfObject(object) {
+function parseGltfObject(object, meshHandler) {
 
 	/*
 	  parseGltfObject(object)
@@ -259,18 +480,6 @@ function parseGltfObject(object) {
 						/>
 					)
 				}
-
-				// lightTypes.map(lightTypeString => {
-				// 	if (lightSource.type.toString() == lightTypeString) {
-				// 		console.log('GltfLight created: ')
-				// 		console.log(lightSource)
-						
-
-				// 		return(
-				// 			lightSource
-				// 		)
-				// 	}
-				// })
 			}
 			break;
 
@@ -282,6 +491,9 @@ function parseGltfObject(object) {
 			} else {
 				return (
 					<GltfMesh
+						name={object.name}
+						description={lorem.generateSentences(1)}
+						notes={lorem.generateParagraphs(1)}
 						object={object} 
 						key={object.uuid}
 						geometry={object.geometry}
@@ -289,6 +501,7 @@ function parseGltfObject(object) {
 						position={object.position}
 						rotation={object.rotation}
 						scale={object.scale}
+						inputHandler={meshHandler}
 						// PUT MESH PROPERTIES HERE https://threejs.org/docs/index.html#api/en/objects/Mesh
 					/>
 				)
@@ -352,11 +565,3 @@ function Loading() {
 	return (null);
 }
 
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: '#fff',
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-});
