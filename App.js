@@ -23,28 +23,10 @@ extend({ OrbitControls })
 export default class App extends React.Component {
 	render() {
 		return (
-			<div style={{height: "100%"}}>
-				<AppWrapper>
-				{/* <GuiPanel/>
-				<Canvas>
-					<Camera/>
-					<Suspense fallback={<Loading />}>
-						<AssetLoader path={require('./assets_3d/oasis_test1.gltf')}></AssetLoader>
-					</Suspense>
-					<OrbitControl />
-					<ambientLight intensity={.2} />
-					<BoxDemo position={[1.2, 0, 0]} />
-					<GltfCamera></GltfCamera>
-					<Effects/>
-				</Canvas>  */}
-				</AppWrapper>
-				
-			</div>
+			<AppWrapper/>
 		);
 	}
 }
-
-
 
 /* 
 
@@ -65,6 +47,7 @@ class AppCanvas extends React.PureComponent {
 					<AssetLoader 
 						path={require('./assets_3d/oasis_test1.gltf')}
 						inputHandler = {this.props.inputHandler}
+						open={this.props.open}
 					></AssetLoader>
 				</Suspense>
 				<OrbitControl />
@@ -81,19 +64,33 @@ class AppWrapper extends React.Component {
 	constructor(props){
 		super(props)
 		this.state = {
-			activeObject: null
+			activeObject: null,
+			visible: true
 		}
 
-		this.handler = this.handler.bind(this)
-		
+		this.close = this.close.bind(this)
+		this.open = this.open.bind(this)
+
+		this.handler = this.handler.bind(this)		
+	}
+
+	close() {
+		this.setState({
+			visible: false
+		})
+	}
+
+	open() {
+		this.setState({
+			visible: true
+		})
 	}
 
 	handler(mesh) {
-		console.log('handler() called for object ' + mesh.props.name)
-		console.log(mesh);
+		// console.log('handler() called for object ' + mesh.props.name)
+		// console.log(mesh);
 		this.setState({
 			activeObject: mesh
-			
 		})
 	}
 
@@ -102,10 +99,13 @@ class AppWrapper extends React.Component {
 			<div style={{height: "100%"}}>
 				<GuiPanel
 					selectedObject={this.state.activeObject}
+					visible={this.state.visible}
+					close={this.close}
 				/>
 
 				<AppCanvas 
 					inputHandler = {this.handler}
+					open = {this.open}
 				/>
 			</div>
 		)
@@ -119,44 +119,129 @@ class GuiPanel extends React.Component {
 
 	render() {
 		return(
-			<div style={{
-				display: 'flex',
-				flexDirection: 'column',
-				position: 'absolute',
-				zIndex: 100,
-				minWidth: '375px',	// NEEDS TO BE CHANGED FOR MOBILE, a slightly different system needs to be used for gui
-				width: '33%',
-				height: '100%',
-				backgroundColor: 'rgba(128, 128, 128, .9)',
-			}}>
-				<div style={{
-					opacity: '100%', 
-					margin: '0px 20px'
-				}}>
-					
-					{/* marginBlock: what is setting is the default to a non-zero value?? where do I go to change that at the root level?? */}
-
-					<h1 style={{
-						fontSize: '48px',
-						padding: '20px 0px',
-						marginBlock: '0px',
-						overflow: 'hidden'
-					}}>
-						{this.props.selectedObject?.props.name}
-					</h1>
-
-
-					<h2 style={{
-						color: 'dark grey', 
-						marginBlock: '0px'
-					}}>visual description</h2>
-
-
-					<p>{lorem.generateSentences(3)}</p>
-					
-				</div>
+			<div>
+				{this.props.selectedObject ?  <GuiPanelLeft close={this.props.close} visible={this.props.visible} selectedObject={this.props.selectedObject}/> : null }
 				
+				<GuiPanelRight/>
 			</div>
+			
+		)
+	}
+}
+
+class GuiPanelLeft extends React.Component {
+	constructor(props) {
+		super(props)
+		// this.state = {
+		// 	visible: true
+		// }
+
+		// this.close = this.close.bind(this)
+		// this.open = this.open.bind(this)
+	}
+
+	// close() {
+	// 	this.setState({
+	// 		visible: false
+	// 	})
+	// }
+
+	// open() {
+	// 	this.setState({
+	// 		visible: true
+	// 	})
+	// }
+
+	render() {
+		return(
+			<div>
+			{this.props.visible ? <div style={{
+				// THIS IS WHAT'S CHANGED WHEN THINGS ARE CLICKED
+			   display: 'flex',
+			   flexDirection: 'column',
+			   position: 'absolute',
+			   zIndex: 100,
+			   minWidth: '375px',	// NEEDS TO BE CHANGED FOR MOBILE, a slightly different system needs to be used for gui
+			   width: '33%',
+			   bottom: '0px',
+			   top: '0px',
+			   backgroundColor: 'rgba(128, 128, 128, .3)',
+			   margin: '20px'
+		   }}>
+
+
+			   
+
+
+
+			   <div style={{
+				   opacity: '100%', 
+				   margin: '0px 20px'
+			   }}>
+				   
+				   {/* marginBlock: what is setting is the default to a non-zero value?? where do I go to change that at the root level?? */}
+
+				   <h1 style={{
+					   fontSize: '48px',
+					   padding: '20px 0px',
+					   marginBlock: '0px',
+					   overflow: 'hidden'
+				   }}>
+					   {this.props.selectedObject?.props.name}
+				   </h1>
+
+
+				   <h2 style={{
+					   color: 'dark grey', 
+					   marginBlock: '0px'
+				   }}>visual description</h2>
+
+
+				   <p>{lorem.generateSentences(3)}</p>
+				   
+
+
+				   <button 
+				   type={'button'} 
+				   style={{
+					   position: 'absolute',
+					   top: '5px',
+					   right: '5px',
+					   backgroundColor: 'transparent',
+					   border: 'none',
+					   padding: '0px'
+					   
+				   }}
+				   onClick={this.props.close}>
+
+				   
+
+				   <img src={require('./assets/icon_close.png')} style={{
+					   height: '30px'
+				   }}/>
+			   </button>
+			   </div>
+			   
+			   
+
+
+
+
+
+
+
+
+		   </div> : null}
+		   </div>
+			
+		)
+	}
+}
+
+class GuiPanelRight extends React.PureComponent {
+	render() {
+		return(
+			null
 		)
 	}
 }
@@ -316,6 +401,8 @@ class GltfMesh extends GltfObject {
 					// showInfo(name, description, notes)
 					console.log(this.props.name + " says: I\'ve been clicked!")
 					this.props.inputHandler(this)
+					// should be changing visible state of GuiPanelLeft to true
+					this.props.open()
 					e.stopPropagation()
 					// this.showInfo(this.props.name, this.props.description, this.props.notes)
 				}}
@@ -443,13 +530,13 @@ function AssetLoader(props) {
 	console.log(gltfObjects);
 
 	gltfObjects.map(object => { 
-		sceneObjects.push(parseGltfObject(object, props.inputHandler)); 
+		sceneObjects.push(parseGltfObject(object, props.inputHandler, props.open)); 
 	});
 
 	return (sceneObjects);
 }
 
-function parseGltfObject(object, meshHandler) {
+function parseGltfObject(object, meshHandler, guiLeftPanelOpen) {
 
 	/*
 	  parseGltfObject(object)
@@ -502,6 +589,7 @@ function parseGltfObject(object, meshHandler) {
 						rotation={object.rotation}
 						scale={object.scale}
 						inputHandler={meshHandler}
+						open={guiLeftPanelOpen}
 						// PUT MESH PROPERTIES HERE https://threejs.org/docs/index.html#api/en/objects/Mesh
 					/>
 				)
@@ -554,7 +642,6 @@ function parseGltfObjectChildren(array) {
 	} else {
 		throw "Object passed to parseGltfObjectChildren() not an array.";
 	}
-
 }
 
 
