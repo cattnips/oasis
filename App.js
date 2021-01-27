@@ -1,5 +1,6 @@
 import ReactDOM from 'react-dom'
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import React, { useRef, useState, useEffect, Suspense, ErrorBoundary, Component } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Canvas, useLoader, useRender, useFrame, render, useThree, extend, bufferGeometry, useResource } from 'react-three-fiber'
@@ -11,11 +12,10 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
 
-import { Effects as DreiEffects, Text as ReactText } from '@react-three/drei'
+import { Box, Effects as DreiEffects, Text as ReactText } from '@react-three/drei'
 
 import { LoremIpsum } from "lorem-ipsum"
 extend({ EffectComposer, RenderPass, GlitchPass })
-// import AssetLoader from './components/AssetLoader'
 extend({ OrbitControls })
 
 
@@ -23,10 +23,38 @@ extend({ OrbitControls })
 export default class App extends React.Component {
 	render() {
 		return (
-			<AppWrapper/>
+			<div style={{height:'100%'}}>
+				<FontLoader/>
+				<AppWrapper/>
+			</div>
+			
 		);
 	}
 }
+
+/*
+
+	CONSTANTS
+
+*/
+
+function FontLoader() {
+	const [loaded] = useFonts({
+		Dogica: require('./assets/fonts/OTF/Dogica.otf'),
+		Dogica_Pixel: require('./assets/fonts/OTF/Dogica_Pixel.otf'),
+		Dogica_Bold: require('./assets/fonts/OTF/Dogica_bold.otf'),
+		PixelArial11: require('./assets/fonts/PixelArial11.ttf'),
+		RobotoBold: require('./assets/fonts/roboto/Roboto-Bold.ttf'),
+		RobotoRegular: require('./assets/fonts/roboto/Roboto-Regular.ttf'),
+		RobotoItalic: require('./assets/fonts/roboto/Roboto-Italic.ttf'),
+	})
+
+	return(null)
+	// return (
+	// 	<View style={{fon}}
+	// )
+}
+
 
 /* 
 
@@ -41,7 +69,8 @@ class AppCanvas extends React.PureComponent {
 
 	render() {
 		return(
-			<Canvas>
+			<Canvas 
+			onCreated={state => state.gl.setClearColor("black")}>
 				<Camera/>
 				<Suspense fallback={<Loading />}>
 					<AssetLoader 
@@ -50,7 +79,7 @@ class AppCanvas extends React.PureComponent {
 						open={this.props.open}
 					></AssetLoader>
 				</Suspense>
-				<OrbitControl />
+				<OrbitControl  enableZoom={false}/>
 				<ambientLight intensity={.2} />
 				<BoxDemo position={[1.2, 0, 0]} />
 				<GltfCamera></GltfCamera>
@@ -97,11 +126,12 @@ class AppWrapper extends React.Component {
 	render() {
 		return (
 			<div style={{height: "100%"}}>
+				<FontLoader></FontLoader>
+				
 				<GuiPanel
 					selectedObject={this.state.activeObject}
 					visible={this.state.visible}
-					close={this.close}
-				/>
+					close={this.close}/>
 
 				<AppCanvas 
 					inputHandler = {this.handler}
@@ -120,7 +150,12 @@ class GuiPanel extends React.Component {
 	render() {
 		return(
 			<div>
-				{this.props.selectedObject ?  <GuiPanelLeft close={this.props.close} visible={this.props.visible} selectedObject={this.props.selectedObject}/> : null }
+				{this.props.selectedObject ?  
+					<GuiPanelLeft 
+						close={this.props.close} 
+						visible={this.props.visible} 
+						selectedObject={this.props.selectedObject}/>
+				: null }
 				
 				<GuiPanelRight/>
 			</div>
@@ -132,25 +167,7 @@ class GuiPanel extends React.Component {
 class GuiPanelLeft extends React.Component {
 	constructor(props) {
 		super(props)
-		// this.state = {
-		// 	visible: true
-		// }
-
-		// this.close = this.close.bind(this)
-		// this.open = this.open.bind(this)
 	}
-
-	// close() {
-	// 	this.setState({
-	// 		visible: false
-	// 	})
-	// }
-
-	// open() {
-	// 	this.setState({
-	// 		visible: true
-	// 	})
-	// }
 
 	render() {
 		return(
@@ -158,6 +175,8 @@ class GuiPanelLeft extends React.Component {
 			{this.props.visible ? <div style={{
 				// THIS IS WHAT'S CHANGED WHEN THINGS ARE CLICKED
 			   display: 'flex',
+			   justifyContent: 'center',
+			   alignItems: 'center',
 			   flexDirection: 'column',
 			   position: 'absolute',
 			   zIndex: 100,
@@ -165,8 +184,11 @@ class GuiPanelLeft extends React.Component {
 			   width: '33%',
 			   bottom: '0px',
 			   top: '0px',
-			   backgroundColor: 'rgba(128, 128, 128, .3)',
-			   margin: '20px'
+			   backgroundColor: 'rgba(0, 0, 0, .85)',
+			   margin: '0px',
+			   paddingLeft: '20px',
+			   paddingRight: '20px',
+			   color: 'white',
 		   }}>
 
 
@@ -176,66 +198,90 @@ class GuiPanelLeft extends React.Component {
 
 			   <div style={{
 				   opacity: '100%', 
-				   margin: '0px 20px'
+				   margin: '0px 20px',
+				   fontSize: '64px',
+				   textAlign: 'right',
+				   width: '100%'
 			   }}>
-				   
-				   {/* marginBlock: what is setting is the default to a non-zero value?? where do I go to change that at the root level?? */}
 
+					<button 
+						onClick={this.props.close}
+							type={'button'} 
+							style={{
+								position: 'absolute',
+								top: '20px',
+								left: '20px',
+								backgroundColor: 'transparent',
+								border: 'none',
+								padding: '0px'}}>
+						<img src={require('./assets/icon_close.png')} style={{height: '30px'}}/>
+			   		</button>
+				   
 				   <h1 style={{
-					   fontSize: '48px',
-					   padding: '20px 0px',
+					   fontFamily: 'RobotoBold',
+					   fontSize: '1em',
+					   paddingTop: '20px',
 					   marginBlock: '0px',
-					   overflow: 'hidden'
+					   overflow: 'hidden',
+					   width: '100%'
 				   }}>
 					   {this.props.selectedObject?.props.name}
 				   </h1>
 
 
 				   <h2 style={{
-					   color: 'dark grey', 
-					   marginBlock: '0px'
+					   margin: '0px',
+					   paddingTop: '10px',
+					   paddingBottom: '10px',
+					   fontFamily: 'RobotoItalic',
+					   fontSize: '.5em',
+					   color: 'DimGray', 
+					   marginBlock: '0px',
 				   }}>visual description</h2>
 
 
-				   <p>{lorem.generateSentences(3)}</p>
-				   
-
-
-				   <button 
-				   type={'button'} 
-				   style={{
-					   position: 'absolute',
-					   top: '5px',
-					   right: '5px',
-					   backgroundColor: 'transparent',
-					   border: 'none',
-					   padding: '0px'
-					   
+				   <p style={{
+					   fontFamily: 'RobotoRegular',
+					   fontSize: '.3em',
+					   margin: '0px',
 				   }}
-				   onClick={this.props.close}>
-
+				   >the place where (most of) the magic happens. built in 2015 with the graduation money I recieved from family, it's been through quite a few upgrades (in fact, the only original parts not replaced - not including the case - have been the hard drives and the mouse/keyboard(!) in it's lifetime.</p>
 				   
-
-				   <img src={require('./assets/icon_close.png')} style={{
-					   height: '30px'
-				   }}/>
-			   </button>
+				   
+				   <Canvas style={{height: '300px', width: '100%', margin: '0px', padding: '0px'}}>
+						<GuiPanelPreview object={this.props.selectedObject}/>
+				   </Canvas>
+				   
 			   </div>
-			   
-			   
-
-
-
-
-
-
-
 
 		   </div> : null}
 		   </div>
 			
 		)
 	}
+}
+
+function GuiPanelPreview(props) {
+	const scene = useRef()
+	const { camera } = useThree()
+	useFrame(({ gl }) => void (
+		(gl.autoClear = true),
+		// gl.setClearColor('red'),
+		gl.clearDepth(),
+		gl.render(scene.current, camera)
+		// gl.setSize(300, 300)
+	), 10)
+	return (
+		<scene ref={scene}>
+			<OrbitControl enableZoom={false} autoRotate={true}/>
+			{/* <orbitControls args={[ camera , gl.domElement]}/> */}
+			{/* <BoxDemo/> */}
+			<mesh args={[props.object.props.geometry, props.object.props.material]}/>
+			<Effects/>
+			<pointLight position={[0, 5, 0]}/>
+			<ambientLight intensity={.2}/>
+		</scene>
+	)
 }
 
 class GuiPanelRight extends React.PureComponent {
@@ -305,7 +351,7 @@ const lorem = new LoremIpsum({
 	}
 });
 
-const OrbitControl = () => {
+const OrbitControl = (props) => {
 	
 	/*
 		TO-DO
@@ -320,7 +366,7 @@ const OrbitControl = () => {
 
 	// CAMERA POSITION IS SET HERE
 	camera.position.set(2, 2, 0);
-	useFrame(() => ref.current.update(), 2)
+	useFrame(() => ref.current.update(), 1)
 	useEffect(() => void ref.current.addEventListener('change', invalidate), [])
 	
 	return(
@@ -336,8 +382,8 @@ const OrbitControl = () => {
 
 		<orbitControls 
 			ref={ref} 
-			enableZoom={true} 
-			autoRotate={true} 
+			enableZoom={props.enableZoom} 
+			autoRotate={props.autoRotate ? props.autoRotate : false} 
 			enableDamping={true}
 			dampingFactor={.05} 
 			panSpeed={.5}
@@ -481,8 +527,9 @@ class GltfLight extends React.Component {
 */
 
 function Effects() {
-	const { gl, scene, camera, size } = useThree()
+	const { gl, scene, camera, size, backgroundColor, THREE } = useThree()
 	const composer = useRef()
+	// scene.backgroundColor = new THREE.Color( 0xff0000 );
 	useEffect(() => void composer.current.setSize(size.width, size.height), [size])
 	useFrame(() => composer.current.render(), 1)
 
@@ -502,20 +549,6 @@ function Camera(props) {
 	// Update it every frame
 	useFrame(() => ref.current.updateMatrixWorld())
 	return <perspectiveCamera ref={ref} {...props} />
-}
-
-function Information (props) {
-	useFrame(({ gl }) => void ((gl.autoClear = false), gl.render(this.information()), 5))
-
-	return(
-		<ReactText
-			// style={styles.info}
-			color={'red'}
-			fontSize={1}>
-			HELLO?!
-		</ReactText>
-	);
-	
 }
 
 
