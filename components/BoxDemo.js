@@ -4,7 +4,7 @@ import React, { useRef, useState, Suspense, ErrorBoundary } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Canvas, useLoader, useFrame } from 'react-three-fiber'
 
-const BoxDemo = (props) => {
+export const BoxDemo = (props) => {
     // This reference will give us direct access to the mesh
     const mesh = useRef()
   
@@ -30,5 +30,3 @@ const BoxDemo = (props) => {
       </mesh>
     )
   }
-
-  export default BoxDemo;
