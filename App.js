@@ -13,8 +13,8 @@ import { GlitchPass } from 'three/examples/jsm/postprocessing/GlitchPass'
 import { Box, Effects as DreiEffects, Text as ReactText } from '@react-three/drei'
 
 import { MeshBasicMaterial } from 'three';
-import { AppWrapper } from './components/AppWrapper';
-import { FontLoader } from './components/FontLoader';
+import { AppWrapper } from './components/utility/AppWrapper';
+import { FontLoader } from './components/utility/FontLoader';
 
 extend({ EffectComposer, RenderPass, GlitchPass })
 extend({ OrbitControls })
